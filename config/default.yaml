@@ -1,0 +1,54 @@
+# Default configuration for AI Code Review
+
+# Analyzers configuration
+analyzers:
+  security:
+    enabled: true
+  quality:
+    enabled: true
+    max_complexity: 10
+    max_function_length: 50
+    max_class_length: 300
+  performance:
+    enabled: true
+  testing:
+    enabled: true
+
+# File exclusions (glob patterns)
+exclusions:
+  - "*.lock"
+  - "*.min.js"
+  - "*.min.css"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "Pipfile.lock"
+  - "poetry.lock"
+  - "*.map"
+  - "dist/*"
+  - "build/*"
+  - "node_modules/*"
+  - "vendor/*"
+  - ".git/*"
+  - "*.jpg"
+  - "*.png"
+  - "*.gif"
+  - "*.pdf"
+  - "*.zip"
+  - "*.exe"
+
+# Review settings
+max_files_to_review: 50
+max_tokens_per_file: 4096
+max_workers: 3
+min_severity_for_comments: "low"  # critical, high, medium, low, info
+
+# Comment formatting
+formatting:
+  severity_emoji: true
+  category_labels: true
+
+# AI model settings
+model:
+  temperature: 0.1
+  max_retries: 3
+  retry_delay: 2

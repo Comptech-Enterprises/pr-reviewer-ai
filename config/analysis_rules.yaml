@@ -1,0 +1,69 @@
+# Analysis rules and patterns
+
+security_rules:
+  critical_patterns:
+    - name: "SQL Injection"
+      severity: "critical"
+      description: "Potential SQL injection vulnerability"
+    - name: "Command Injection"
+      severity: "critical"
+      description: "Potential command injection vulnerability"
+    - name: "Hardcoded Credentials"
+      severity: "critical"
+      description: "Hardcoded passwords, API keys, or secrets"
+
+  high_patterns:
+    - name: "XSS Vulnerability"
+      severity: "high"
+      description: "Cross-site scripting vulnerability"
+    - name: "Path Traversal"
+      severity: "high"
+      description: "Potential directory traversal vulnerability"
+    - name: "Insecure Deserialization"
+      severity: "high"
+      description: "Unsafe deserialization of untrusted data"
+
+quality_rules:
+  complexity_thresholds:
+    cyclomatic_complexity: 10
+    function_length: 50
+    class_length: 300
+    nesting_depth: 4
+
+  naming_conventions:
+    check_snake_case: true
+    check_camel_case: true
+    check_pascal_case: true
+    min_variable_name_length: 2
+    max_variable_name_length: 50
+
+  documentation:
+    require_docstrings: true
+    require_function_docs: true
+    require_class_docs: true
+
+performance_rules:
+  algorithm_checks:
+    flag_nested_loops: true
+    flag_n_plus_one: true
+    flag_inefficient_sorting: true
+
+  memory_checks:
+    flag_large_allocations: true
+    flag_memory_leaks: true
+
+  database_checks:
+    flag_select_star: true
+    flag_missing_indexes: true
+    flag_n_plus_one_queries: true
+
+testing_rules:
+  coverage_requirements:
+    min_function_coverage: 80
+    min_branch_coverage: 70
+    require_edge_case_tests: true
+
+  test_quality:
+    require_assertions: true
+    flag_brittle_tests: true
+    check_test_naming: true
