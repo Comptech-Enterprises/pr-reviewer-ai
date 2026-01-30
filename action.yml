@@ -1,4 +1,4 @@
-name: 'AI PR Reviewer'
+name: 'AI PR Reviewer using Open source model from Nvidia NIM'
 description: 'Automated code review using Mistral AI via NVIDIA NIM'
 author: 'Paawan13'
 
