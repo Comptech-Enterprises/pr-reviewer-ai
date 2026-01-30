@@ -17,6 +17,10 @@ Automated GitHub PR review system powered by Mistral's Devstral-2-123b model via
 GitHub PR Event → GitHub Action → Review Engine → Devstral AI → Comments on PR
 ```
 
+#####
+This is a test PR
+
+#####
 ## Setup
 
 ### 1. Prerequisites

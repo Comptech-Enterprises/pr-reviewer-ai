@@ -16,7 +16,7 @@ class AIReviewer:
         self,
         api_key: str,
         api_base: str = "https://integrate.api.nvidia.com/v1",
-        model: str = "mistralai/devstral-2-123b",
+        model: str = "mistralai/devstral-2-123b-instruct-2512",
         max_retries: int = 3,
         retry_delay: int = 2
     ):
