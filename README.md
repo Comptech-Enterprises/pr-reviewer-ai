@@ -79,6 +79,8 @@ The workflow file is located at `.github/workflows/pr-review.yml`. It will autom
 
 ### Automated (GitHub Actions)
 
+#### Option 1: Use in Your Own Repository
+
 Once configured, the review runs automatically on every PR:
 
 1. Create or update a pull request
@@ -86,6 +88,52 @@ Once configured, the review runs automatically on every PR:
 3. AI reviews the changed code
 4. Comments posted to PR with findings
 5. Summary comment added to PR
+
+#### Option 2: Use as a Reusable Action
+
+This repository is also published as a reusable GitHub Action. Use it in any other repository:
+
+1. **Add the workflow file** to any repository (`.github/workflows/ai-review.yml`):
+
+```yaml
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: Comptech-Enterprises/pr-reviewer-ai@main
+        with:
+          nvidia-api-key: ${{ secrets.NVIDIA_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          log-level: INFO
+```
+
+2. **Set up secrets** in the target repository:
+   - Go to **Settings → Secrets and variables → Actions**
+   - Add `NVIDIA_API_KEY` with your NVIDIA NIM API key
+
+3. **Create a PR** - the action will automatically run and review your code!
+
+**Action Inputs:**
+- `nvidia-api-key` (required): Your NVIDIA NIM API key
+- `github-token` (required): GitHub token for PR operations (use `${{ secrets.GITHUB_TOKEN }}`)
+- `pr-number` (optional): PR number to review (defaults to current PR)
+- `log-level` (optional): Logging level - `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`)
+
+**Action Outputs:**
+- `files-reviewed`: Number of files reviewed
+- `total-issues`: Total number of issues found
+- `review-complete`: Whether review completed successfully
 
 ### Manual (Command Line)
 
