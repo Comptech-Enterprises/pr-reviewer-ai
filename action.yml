@@ -1,0 +1,74 @@
+name: 'AI Code Review'
+description: 'Automated code review using Mistral AI via NVIDIA NIM'
+author: 'Paawan13'
+
+inputs:
+  nvidia-api-key:
+    description: 'NVIDIA API key for accessing Mistral model'
+    required: true
+  github-token:
+    description: 'GitHub token for PR operations'
+    required: true
+  pr-number:
+    description: 'Pull request number to review'
+    required: false
+    default: ${{ github.event.pull_request.number }}
+  log-level:
+    description: 'Logging level (DEBUG, INFO, WARNING, ERROR)'
+    required: false
+    default: 'INFO'
+
+outputs:
+  files-reviewed:
+    description: 'Number of files reviewed'
+    value: ${{ steps.review.outputs.files-reviewed }}
+  total-issues:
+    description: 'Total number of issues found'
+    value: ${{ steps.review.outputs.total-issues }}
+  review-complete:
+    description: 'Whether review completed successfully'
+    value: ${{ steps.review.outputs.review-complete }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r ${{ github.action_path }}/requirements.txt
+
+    - name: Run AI Code Review
+      id: review
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        NVIDIA_API_KEY: ${{ inputs.nvidia-api-key }}
+      run: |
+        cd ${{ github.action_path }}
+        python src/main.py \
+          --pr-number ${{ inputs.pr-number }} \
+          --log-level ${{ inputs.log-level }}
+
+        # Set outputs (these would come from the review output)
+        echo "review-complete=true" >> $GITHUB_OUTPUT
+        echo "files-reviewed=0" >> $GITHUB_OUTPUT
+        echo "total-issues=0" >> $GITHUB_OUTPUT
+
+    - name: Upload review logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-review-logs
+        path: ${{ github.action_path }}/*.log
+        retention-days: 7
