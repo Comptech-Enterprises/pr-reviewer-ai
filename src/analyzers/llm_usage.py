@@ -54,16 +54,21 @@ Return response in JSON format with fields: title, description, severity, sugges
         """
         results = []
 
-        # Check for hardcoded API keys
+        # Skip analyzing our own analyzer files
+        if "analyzers/" in filename or "llm_usage" in filename:
+            return results
+
+        # Check for hardcoded API keys (CRITICAL - always report with line number)
         hardcoded_keys = self._check_hardcoded_keys(code, filename)
         results.extend(hardcoded_keys)
 
         # Check for LLM API calls
         llm_calls = self._detect_llm_calls(code, filename)
-        results.extend(llm_calls)
 
-        # Check for missing protections
+        # Only check for missing protections if we found actual LLM API calls
         if llm_calls:
+            results.extend(llm_calls)
+
             missing_limits = self._check_missing_limits(code, filename)
             results.extend(missing_limits)
 
@@ -76,54 +81,64 @@ Return response in JSON format with fields: title, description, severity, sugges
         return results
 
     def _check_hardcoded_keys(self, code: str, filename: str) -> List[AnalysisResult]:
-        """Detect hardcoded API keys."""
+        """Detect hardcoded API keys with line numbers."""
         results = []
 
-        # Patterns for common API keys
+        # Patterns for common API keys - look for actual key values, not just variable names
         api_key_patterns = [
-            (r'(OPENAI_API_KEY|openai_api_key)\s*=\s*["\']sk-[a-zA-Z0-9]+["\']', 'OpenAI'),
-            (r'(ANTHROPIC_API_KEY|anthropic_api_key)\s*=\s*["\']sk-ant-[a-zA-Z0-9]+["\']', 'Anthropic'),
-            (r'(NVIDIA_API_KEY|nvidia_api_key)\s*=\s*["\']nvapi-[a-zA-Z0-9-]+["\']', 'NVIDIA NIM'),
-            (r'(MISTRAL_API_KEY|mistral_api_key)\s*=\s*["\'][a-zA-Z0-9]+["\']', 'Mistral'),
-            (r'(api[_-]?key|apikey)\s*[:=]\s*["\'](?!YOUR|your|YOUR_API_KEY)[a-zA-Z0-9-]{20,}["\']', 'Generic'),
+            (r'sk-[a-zA-Z0-9]{20,}', 'OpenAI'),
+            (r'sk-ant-[a-zA-Z0-9]{20,}', 'Anthropic'),
+            (r'nvapi-[a-zA-Z0-9-]{20,}', 'NVIDIA NIM'),
+            (r'(OPENAI_API_KEY|ANTHROPIC_API_KEY|NVIDIA_API_KEY|MISTRAL_API_KEY)\s*=\s*["\'][^"\']*["\']', 'API Key'),
         ]
 
-        for pattern, provider in api_key_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                results.append(AnalysisResult(
-                    severity=Severity.CRITICAL,
-                    category="LLM Usage",
-                    title=f"Hardcoded {provider} API Key",
-                    description=f"Found hardcoded {provider} API key in {filename}. This is a major security risk - keys can be compromised if exposed in version control.",
-                    filename=filename,
-                    suggestion="Move API keys to environment variables or GitHub Secrets. Use: import os; api_key = os.getenv('OPENAI_API_KEY')"
-                ))
+        lines = code.split('\n')
+        for line_num, line in enumerate(lines, 1):
+            for pattern, provider in api_key_patterns:
+                if re.search(pattern, line):
+                    results.append(AnalysisResult(
+                        severity=Severity.CRITICAL,
+                        category="LLM Usage",
+                        title=f"Hardcoded {provider} API Key Found",
+                        description=f"API key is hardcoded in {filename} at line {line_num}. This is a critical security vulnerability - if exposed in version control, anyone can access your API account and incur charges.",
+                        filename=filename,
+                        line_number=line_num,
+                        suggestion="Immediately revoke this key. Move API keys to:\n- Environment variables: `export OPENAI_API_KEY='...'`\n- GitHub Secrets for Actions\n- .env file (add .env to .gitignore)\n- Use: `api_key = os.getenv('OPENAI_API_KEY')`"
+                    ))
 
         return results
 
     def _detect_llm_calls(self, code: str, filename: str) -> List[AnalysisResult]:
-        """Detect LLM API calls in code."""
+        """Detect actual LLM API calls with line numbers."""
         results = []
 
-        # Patterns for LLM API calls
+        # Real API call patterns - only actual function calls, not documentation
         llm_patterns = [
-            (r'openai\.ChatCompletion\.create|client\.chat\.completions\.create', 'OpenAI', 'OpenAI ChatCompletion'),
-            (r'claude-|messages\.create\(|anthropic\.Anthropic', 'Anthropic', 'Anthropic Claude'),
-            (r'mistralai|mistral\.Mistral', 'Mistral', 'Mistral API'),
-            (r'google\.generativeai|genai\.generate', 'Google', 'Google Gemini'),
-            (r'nvidia\.nims|integrate\.api\.nvidia\.com', 'NVIDIA', 'NVIDIA NIM'),
+            (r'client\.chat\.completions\.create\s*\(', 'OpenAI', 'OpenAI API call'),
+            (r'openai\.ChatCompletion\.create\s*\(', 'OpenAI', 'OpenAI ChatCompletion'),
+            (r'anthropic\.Anthropic\s*\(|client\.messages\.create\s*\(', 'Anthropic', 'Anthropic Claude API call'),
+            (r'client\.chat\s*\(|MistralClient\s*\(', 'Mistral', 'Mistral API call'),
+            (r'genai\.generate_content\s*\(', 'Google', 'Google Gemini API call'),
+            (r'OpenAI\s*\(.*api_key', 'OpenAI', 'OpenAI client initialization'),
         ]
 
-        for pattern, provider, service in llm_patterns:
-            if re.search(pattern, code, re.IGNORECASE):
-                results.append(AnalysisResult(
-                    severity=Severity.INFO,
-                    category="LLM Usage",
-                    title=f"LLM API Call Detected: {service}",
-                    description=f"Found {provider} API usage in {filename}. LLM API calls have associated costs - ensure they're optimized.",
-                    filename=filename,
-                    suggestion="Consider: 1) Caching responses, 2) Using cheaper models, 3) Token limit enforcement, 4) Batch processing"
-                ))
+        lines = code.split('\n')
+        for line_num, line in enumerate(lines, 1):
+            # Skip comments and docstrings
+            if line.strip().startswith('#') or line.strip().startswith('"""') or line.strip().startswith("'''"):
+                continue
+
+            for pattern, provider, service in llm_patterns:
+                if re.search(pattern, line, re.IGNORECASE):
+                    results.append(AnalysisResult(
+                        severity=Severity.INFO,
+                        category="LLM Usage",
+                        title=f"LLM API Call: {service}",
+                        description=f"Found {provider} API call at line {line_num}. Each API call incurs costs. Ensure proper safeguards are in place.",
+                        filename=filename,
+                        line_number=line_num,
+                        suggestion="Review this API call for: 1) Token limits, 2) Caching, 3) Error handling, 4) Cost optimization"
+                    ))
 
         return results
 
@@ -132,28 +147,24 @@ Return response in JSON format with fields: title, description, severity, sugges
         results = []
 
         # Look for API calls without explicit limits
-        if re.search(r'(chat\.completions\.create|ChatCompletion\.create)', code):
-            # Check if max_tokens is set
-            if not re.search(r'max_tokens\s*[:=]\s*\d+', code):
-                results.append(AnalysisResult(
-                    severity=Severity.HIGH,
-                    category="LLM Usage",
-                    title="Missing Token Limit on LLM Call",
-                    description=f"LLM API call in {filename} has no max_tokens limit. This can lead to unexpectedly high costs.",
-                    filename=filename,
-                    suggestion="Add max_tokens parameter: client.chat.completions.create(..., max_tokens=1000)"
-                ))
-
-            # Check if temperature is optimized for cost
-            if not re.search(r'temperature\s*[:=]\s*0[.,](0|1|2)', code):
-                results.append(AnalysisResult(
-                    severity=Severity.LOW,
-                    category="LLM Usage",
-                    title="Temperature Not Optimized for Cost",
-                    description=f"Temperature in {filename} not set to low value. Higher temperature increases computation costs.",
-                    filename=filename,
-                    suggestion="Use lower temperature (0.0-0.2) for deterministic tasks to reduce costs. Higher temp (0.7-1.0) only when needed."
-                ))
+        lines = code.split('\n')
+        for line_num, line in enumerate(lines, 1):
+            # Check for LLM calls
+            if re.search(r'(chat\.completions\.create|ChatCompletion\.create|messages\.create|generate_content)', line):
+                # Check if this specific call has max_tokens
+                if not re.search(r'max_tokens\s*[:=]\s*\d+', line):
+                    # Look in surrounding lines for max_tokens
+                    context = '\n'.join(lines[max(0, line_num-2):min(len(lines), line_num+2)])
+                    if not re.search(r'max_tokens\s*[:=]\s*\d+', context):
+                        results.append(AnalysisResult(
+                            severity=Severity.HIGH,
+                            category="LLM Usage",
+                            title="Missing Token Limit on LLM Call",
+                            description=f"LLM API call at line {line_num} has no max_tokens limit. Without this limit, API can return very long responses, causing high costs.",
+                            filename=filename,
+                            line_number=line_num,
+                            suggestion="Add max_tokens parameter:\n```\nresponse = client.chat.completions.create(\n    model='gpt-4',\n    messages=messages,\n    max_tokens=1000  # Add this!\n)\n```"
+                        ))
 
         return results
 
@@ -161,19 +172,26 @@ Return response in JSON format with fields: title, description, severity, sugges
         """Check for missing retry logic."""
         results = []
 
-        if re.search(r'(chat\.completions\.create|ChatCompletion\.create)', code):
+        # Look for LLM API calls without retry logic
+        if re.search(r'(chat\.completions\.create|ChatCompletion\.create|messages\.create)', code):
             # Check for retry logic
-            has_retry = bool(re.search(r'(retry|Retry|backoff|Backoff|tenacity)', code))
+            has_retry = bool(re.search(r'(tenacity|retry|backoff|Retry|attempt|try.*except)', code, re.IGNORECASE))
 
             if not has_retry:
-                results.append(AnalysisResult(
-                    severity=Severity.MEDIUM,
-                    category="LLM Usage",
-                    title="Missing Retry Logic for API Calls",
-                    description=f"LLM API calls in {filename} have no retry mechanism. Transient failures will cause errors.",
-                    filename=filename,
-                    suggestion="Implement exponential backoff: use tenacity library or implement retry with exponential backoff (e.g., 2s, 4s, 8s)"
-                ))
+                # Find the line with API call
+                lines = code.split('\n')
+                for line_num, line in enumerate(lines, 1):
+                    if re.search(r'(chat\.completions\.create|ChatCompletion\.create|messages\.create)', line):
+                        results.append(AnalysisResult(
+                            severity=Severity.MEDIUM,
+                            category="LLM Usage",
+                            title="Missing Retry Logic for API Calls",
+                            description=f"LLM API call at line {line_num} has no retry mechanism. API requests can fail due to rate limits or temporary outages. Without retry logic, transient failures will crash your application.",
+                            filename=filename,
+                            line_number=line_num,
+                            suggestion="Use tenacity library for exponential backoff:\n```\nfrom tenacity import retry, stop_after_attempt, wait_exponential\n\n@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))\ndef call_llm():\n    return client.chat.completions.create(...)\n```"
+                        ))
+                        break
 
         return results
 
@@ -181,18 +199,25 @@ Return response in JSON format with fields: title, description, severity, sugges
         """Check for missing caching opportunities."""
         results = []
 
-        if re.search(r'(chat\.completions\.create|ChatCompletion\.create)', code):
+        # Look for LLM API calls that could benefit from caching
+        if re.search(r'(chat\.completions\.create|ChatCompletion\.create|messages\.create)', code):
             # Check for caching
-            has_cache = bool(re.search(r'(cache|Cache|lru_cache|Redis|sqlite)', code))
+            has_cache = bool(re.search(r'(lru_cache|cache|Cache|Redis|memcache)', code, re.IGNORECASE))
 
             if not has_cache:
-                results.append(AnalysisResult(
-                    severity=Severity.MEDIUM,
-                    category="LLM Usage",
-                    title="No Caching for LLM Responses",
-                    description=f"LLM responses in {filename} are not cached. Identical queries will be charged multiple times.",
-                    filename=filename,
-                    suggestion="Implement caching:\n- Simple: functools.lru_cache for function results\n- Advanced: Redis/memcached for distributed caching\n- Cost savings: 50-80% reduction for repeated queries"
-                ))
+                # Find the line with API call
+                lines = code.split('\n')
+                for line_num, line in enumerate(lines, 1):
+                    if re.search(r'(chat\.completions\.create|ChatCompletion\.create|messages\.create)', line):
+                        results.append(AnalysisResult(
+                            severity=Severity.MEDIUM,
+                            category="LLM Usage",
+                            title="Missing Caching for LLM Responses",
+                            description=f"LLM API call at line {line_num} has no caching. If the same prompt is sent multiple times, you'll pay for each call. Caching can reduce costs by 50-80%.",
+                            filename=filename,
+                            line_number=line_num,
+                            suggestion="Implement caching:\n```\nfrom functools import lru_cache\n\n@lru_cache(maxsize=128)\ndef get_llm_response(prompt: str):\n    return client.chat.completions.create(model='gpt-4', messages=[{'role': 'user', 'content': prompt}])\n```"
+                        ))
+                        break
 
         return results
