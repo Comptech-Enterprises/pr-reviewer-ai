@@ -1,109 +1,156 @@
-# AI Code Review System
+# LLM API Usage Analyzer
 
-Automated GitHub PR review system powered by Mistral's Devstral-2-123b model via NVIDIA NIM APIs. This system analyzes pull requests for security vulnerabilities, code quality issues, performance problems, and testing coverage.
+Automated GitHub PR reviewer that detects and optimizes LLM (Large Language Model) API usage in your code. Powered by Mistral's Devstral-2-123b model via NVIDIA NIM APIs.
+
+## Overview
+
+This tool analyzes pull requests for LLM/AI API usage patterns, security vulnerabilities, and cost optimization opportunities. It supports 10+ different LLM providers and includes pricing information to help estimate API costs.
 
 ## Features
 
-- **🔒 Security Analysis**: Detect SQL injection, XSS, authentication issues, hardcoded secrets, and more
-- **✨ Code Quality Review**: Check for code smells, SOLID violations, naming issues, and complexity
-- **⚡ Performance Analysis**: Identify inefficient algorithms, memory issues, N+1 queries, and optimization opportunities
-- **🧪 Testing Suggestions**: Recommend test cases for new code, edge cases, and test improvements
-- **🤖 AI-Powered**: Uses Mistral Devstral-2-123b, a state-of-the-art code model via NVIDIA NIM
-- **📊 Detailed Reports**: Inline comments and comprehensive PR summaries
+- **🔍 Multi-Provider Detection**: Supports OpenAI, Anthropic, LiteLLM, LangChain, Azure OpenAI, Google AI, Cohere, AWS Bedrock, Hugging Face, LlamaIndex, Replicate, and more
+- **💰 Cost Estimation**: Automatically estimates costs based on detected models and pricing data
+- **🔑 Security Scanning**: Detects hardcoded API keys and credentials
+- **⚡ Best Practices**: Identifies missing token limits, timeouts, retry logic, and streaming
+- **🎯 Performance Analysis**: Detects sync calls in async contexts and other efficiency issues
+- **📍 Precise Reporting**: Shows exact line numbers and file locations for each issue
+- **💡 Actionable Suggestions**: Provides specific code examples and recommendations
 
-## Architecture
+## Detected Issues
+
+### Critical
+- **Hardcoded API Keys**: Exposed credentials (security risk)
+
+### High/Medium
+- **Missing Token Limits**: No `max_tokens` parameter (cost control)
+- **No Timeout Configuration**: API calls could hang indefinitely
+- **Missing Retry Logic**: No error handling for transient failures
+- **Sync in Async Context**: Blocking calls in async functions
+
+### Low/Info
+- **No Streaming**: Long responses may cause timeouts or poor UX
+- **LLM API Usage Detection**: Informational - tracks all LLM integrations
+
+## Supported LLM Providers
+
+| Provider | SDK | Models Supported |
+|----------|-----|-----------------|
+| **OpenAI** | openai | GPT-4, GPT-4 Turbo, GPT-4o, GPT-3.5 Turbo, o1 |
+| **Anthropic** | anthropic | Claude 3 Opus, Sonnet, Haiku, 3.5 Sonnet |
+| **Google** | google-generativeai | Gemini Pro, 1.5 Pro, 1.5 Flash |
+| **Mistral** | mistralai | Large, Medium, Small, Codestral, Devstral |
+| **LiteLLM** | litellm | Multi-provider proxy |
+| **LangChain** | langchain | Framework for all providers |
+| **Azure OpenAI** | azure-openai | Azure-hosted models |
+| **Cohere** | cohere | Command R+, Command R |
+| **Hugging Face** | transformers | Open-source models |
+| **AWS Bedrock** | boto3 | Bedrock runtime models |
+| **LlamaIndex** | llama-index | Vector indexing framework |
+| **Replicate** | replicate | Community models |
+
+## Model Pricing Reference
+
+The analyzer includes current pricing for 30+ models:
+
+**OpenAI:**
+- GPT-4: $0.03/$0.06 per 1K tokens (input/output)
+- GPT-3.5-Turbo: $0.0005/$0.0015 per 1K tokens
+- GPT-4o-mini: $0.00015/$0.0006 per 1K tokens (cheapest)
+
+**Anthropic:**
+- Claude 3 Opus: $0.015/$0.075 per 1K tokens
+- Claude 3 Haiku: $0.00025/$0.00125 per 1K tokens (cheapest)
+
+**Google:**
+- Gemini 1.5 Flash: $0.000075/$0.0003 per 1K tokens (cheapest)
+
+**Mistral:**
+- Mistral Small: $0.001/$0.003 per 1K tokens (very cheap)
+
+## Example Output
+
+Each issue appears as a **separate, detailed comment** on your PR:
 
 ```
-GitHub PR Event → GitHub Action → Review Engine → Devstral AI → Comments on PR
+🔴 **CRITICAL** [LLM Usage] - Potential hardcoded API key detected
+
+File: `src/llm_service.py`
+Line: 15
+
+### Issue
+Potential hardcoded API key detected. This is a critical security
+vulnerability - if exposed in version control, anyone can access your
+API account and incur charges.
+
+### How to Resolve
+Use environment variables for API keys
+
+### Cost-Saving Alternatives
+- Use environment variables to secure keys
+- Implement key rotation policies
+- Monitor key usage to detect unauthorized access
+
+---
+*Review powered by AI using Mistral Devstral-2-123b*
 ```
 
-#####
-This is a test PR
-
-#####
 ## Setup
 
 ### 1. Prerequisites
 
-- Python 3.9 or higher
+- Python 3.11 or higher
 - GitHub repository with Actions enabled
 - NVIDIA NIM API key ([Get one here](https://build.nvidia.com/mistralai/devstral))
 
 ### 2. Installation
 
-Clone this repository or add files to your project:
-
 ```bash
-git clone <your-repo>
-cd code_assist
+git clone https://github.com/Comptech-Enterprises/pr-reviewer-ai.git
+cd pr-reviewer-ai
 pip install -r requirements.txt
 ```
 
-### 3. Configuration
+### 3. Configure GitHub Secrets
 
-#### GitHub Repository Setup
-
-1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
-2. Add the following secret:
-   - `NVIDIA_API_KEY`: Your NVIDIA NIM API key
+1. Go to your repository **Settings → Secrets and variables → Actions**
+2. Click **New repository secret**
+3. Add:
+   - **Name:** `NVIDIA_API_KEY`
+   - **Value:** Your NVIDIA NIM API key from https://build.nvidia.com/
 
 The `GITHUB_TOKEN` is automatically provided by GitHub Actions.
 
-#### Local Setup (for testing)
-
-Create a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your credentials:
-
-```env
-GITHUB_TOKEN=your_github_personal_access_token
-GITHUB_REPOSITORY=owner/repo
-GITHUB_PR_NUMBER=1
-NVIDIA_API_KEY=your_nvidia_api_key
-```
-
 ### 4. Enable GitHub Actions
 
-The workflow file is located at `.github/workflows/pr-review.yml`. It will automatically trigger on:
+The workflow file is at `.github/workflows/pr-review.yml`. It triggers automatically on:
 - Pull request opened
 - New commits pushed to PR
 - PR reopened
 
-**Note:** GitHub Actions must be enabled in your repository settings. This is the default for most repositories.
-
 ## Usage
 
-### Automated (GitHub Actions)
+### Option 1: Automatic (GitHub Actions)
 
-#### Option 1: Use in Your Own Repository
+Once configured:
 
-Once configured, the review runs automatically on every PR:
+1. Create or push to a pull request
+2. GitHub Actions triggers automatically
+3. AI analyzes LLM API usage
+4. Individual comments posted for each issue
 
-1. Create or update a pull request
-2. GitHub Action triggers automatically
-3. AI reviews the changed code
-4. Comments posted to PR with findings
-5. Summary comment added to PR
+### Option 2: Reusable GitHub Action
 
-#### Option 2: Use as a Reusable Action
-
-This repository is also published as a reusable GitHub Action. Use it in any other repository:
-
-1. **Add the workflow file** to any repository (`.github/workflows/ai-review.yml`):
+Use in any repository:
 
 ```yaml
-name: AI Code Review
+name: LLM API Usage Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  ai-review:
+  llm-review:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -114,226 +161,133 @@ jobs:
         with:
           nvidia-api-key: ${{ secrets.NVIDIA_API_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          pr-number: ${{ github.event.pull_request.number }}
-          log-level: INFO
 ```
 
-2. **Set up secrets** in the target repository:
-   - Go to **Settings → Secrets and variables → Actions**
-   - Add `NVIDIA_API_KEY` with your NVIDIA NIM API key
-
-3. **Create a PR** - the action will automatically run and review your code!
-
-**Action Inputs:**
-- `nvidia-api-key` (required): Your NVIDIA NIM API key
-- `github-token` (required): GitHub token for PR operations (use `${{ secrets.GITHUB_TOKEN }}`)
-- `pr-number` (optional): PR number to review (defaults to current PR)
-- `log-level` (optional): Logging level - `DEBUG`, `INFO`, `WARNING`, `ERROR` (default: `INFO`)
-
-**Action Outputs:**
-- `files-reviewed`: Number of files reviewed
-- `total-issues`: Total number of issues found
-- `review-complete`: Whether review completed successfully
-
-### Manual (Command Line)
-
-You can also run reviews manually:
+### Option 3: Manual CLI Review
 
 ```bash
 python src/main.py \
   --pr-number 123 \
   --github-token $GITHUB_TOKEN \
-  --github-repo owner/repo \
   --nvidia-api-key $NVIDIA_API_KEY
 ```
 
-Options:
-- `--pr-number`: PR number to review (required)
-- `--github-token`: GitHub token (or use `GITHUB_TOKEN` env var)
-- `--github-repo`: Repository in `owner/repo` format
-- `--nvidia-api-key`: NVIDIA API key
-- `--config`: Custom config file path
-- `--log-level`: Logging level (DEBUG, INFO, WARNING, ERROR)
-- `--dry-run`: Run without posting comments
-
 ## Configuration
 
-### Main Configuration (`config/default.yaml`)
+Edit `config/default.yaml`:
 
 ```yaml
 analyzers:
-  security:
+  llm_usage:
     enabled: true
-  quality:
-    enabled: true
-  performance:
-    enabled: true
-  testing:
-    enabled: true
+    check_hardcoded_keys: true
+    check_missing_limits: true
+    check_retry_logic: true
+    estimate_costs: true
 
-exclusions:
-  - "*.lock"
-  - "*.min.js"
-  - "node_modules/*"
-  - "dist/*"
-
+min_severity_for_comments: "low"  # critical, high, medium, low, info
 max_files_to_review: 50
-min_severity_for_comments: "low"
+max_tokens_per_file: 4096
 ```
 
-### Customization
+## Cost Optimization Tips
 
-You can customize:
+| Issue | Impact | Solution | Savings |
+|-------|--------|----------|---------|
+| Hardcoded key | Security risk | Move to env var | Security |
+| No max_tokens | Unbounded costs | Add limit | 20-40% |
+| No caching | Repeated charges | Implement cache | 50-80% |
+| Wrong model | High costs | Use cheaper model | 10-100x |
+| No retry logic | Failed calls | Add exponential backoff | Reliability |
+| No timeout | Hanging requests | Set timeout | Prevents hangs |
 
-1. **Enable/disable analyzers**: Toggle specific review categories
-2. **Exclusion patterns**: Skip generated files, dependencies, etc.
-3. **Severity thresholds**: Only post comments above certain severity
-4. **Formatting**: Toggle emojis, category labels
-5. **AI settings**: Temperature, max tokens, retries
+### Example: Model Cost Comparison
 
-## Example Output
+For the same task with 1K input + 500 output tokens:
 
-### Inline Comment
-
-```
-🔴 **CRITICAL** [Security] **SQL Injection vulnerability**
-
-User input is directly concatenated into SQL query without sanitization on line 42.
-
-💡 **Suggestion:**
-Use parameterized queries or an ORM to prevent SQL injection:
-```python
-cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-```
-
-### Summary Comment
-
-```markdown
-## 🤖 AI Code Review Summary
-
-**PR:** Add user authentication
-**Author:** @johndoe
-**Changes:** 5 files, +234 -12
-
-### 📊 Found 8 issue(s) across 3 categories
-
-**By Severity:**
-- 🔴 Critical: 1
-- 🟠 High: 2
-- 🟡 Medium: 3
-- 🔵 Low: 2
-
-**By Category:**
-- Security: 3 issue(s)
-- Code Quality: 3 issue(s)
-- Testing: 2 issue(s)
-
-### 🚨 Critical & High Priority Issues
-
-- **SQL Injection vulnerability** (Security) in `src/auth.py` Line 42
-- **Missing input validation** (Security) in `src/api.py` Line 128
-- **N+1 query problem** (Performance) in `src/users.py` Line 56
-```
-
-## GitHub Actions Requirements
-
-**Is GitHub Actions required?**
-
-**For automation:** Yes. The GitHub Actions workflow (`.github/workflows/pr-review.yml`) is what triggers the review automatically when PRs are created or updated. Without it, you would need to run reviews manually.
-
-**Alternatives to GitHub Actions:**
-- Run manually via command line (see Manual Usage above)
-- Set up webhooks to trigger reviews from another CI/CD system
-- Use cron jobs to periodically check for new PRs
-
-**GitHub Actions must be enabled** in your repository settings for automatic reviews. Check: Repository → Settings → Actions → Allow all actions and reusable workflows.
+- **GPT-4**: $0.045 per call
+- **GPT-4o-mini**: $0.0004 per call (**112x cheaper**)
+- **Claude 3 Opus**: $0.0225 per call
+- **Claude 3 Haiku**: $0.0004 per call (**56x cheaper**)
+- **Mistral Small**: $0.0035 per call (**13x cheaper**)
 
 ## Troubleshooting
 
 ### Review not running
 
-1. Check GitHub Actions is enabled
+1. Check GitHub Actions is enabled (Settings → Actions)
 2. Verify `NVIDIA_API_KEY` secret is set
 3. Check workflow logs in Actions tab
-4. Ensure repository has pull request permissions
+4. Ensure PR has code changes
 
-### API rate limits
+### No LLM issues found
 
-- GitHub API: 5000 requests/hour for authenticated requests
-- NVIDIA NIM: Check your API plan limits
-- Reduce `max_workers` in config if hitting rate limits
+- Verify your code uses an LLM SDK
+- Check supported providers list above
+- Review logs for pattern matching details
 
-### Comments not posting
+### API errors
 
-1. Verify `GITHUB_TOKEN` has write permissions
-2. Check PR is not from a fork (restricted by default)
-3. Review logs for error messages
-4. Ensure `min_severity_for_comments` isn't too high
+1. Verify NVIDIA API key is valid
+2. Check endpoint is accessible
+3. Ensure you have API quota
 
-### AI not detecting issues
-
-1. Check NVIDIA API key is valid
-2. Verify API endpoint is accessible
-3. Review prompts in `src/prompts/` for your use case
-4. Check AI response in logs (use `--log-level DEBUG`)
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
-code_assist/
-├── .github/workflows/     # GitHub Actions workflow
-├── config/                # Configuration files
+pr-reviewer-ai/
+├── .github/workflows/           # GitHub Actions
 ├── src/
-│   ├── analyzers/         # Analysis modules (security, quality, etc.)
-│   ├── prompts/           # AI prompts
-│   ├── main.py           # Entry point
-│   ├── github_client.py  # GitHub API client
-│   ├── ai_reviewer.py    # AI integration
-│   ├── review_engine.py  # Core orchestration
-│   ├── diff_parser.py    # Diff parsing
-│   └── comment_formatter.py  # Comment formatting
-└── tests/                # Test suite
+│   ├── analyzers/
+│   │   ├── llm_usage.py        # LLM analysis engine
+│   │   └── base.py             # Base analyzer
+│   ├── main.py                 # Entry point
+│   ├── github_client.py        # GitHub API
+│   ├── ai_reviewer.py          # NVIDIA NIM client
+│   ├── review_engine.py        # Orchestration
+│   ├── comment_formatter.py    # Formatting
+│   └── prompts/                # AI prompts
+├── config/default.yaml         # Configuration
+├── action.yml                  # GitHub Action definition
+└── requirements.txt            # Dependencies
 ```
 
-### Running Tests
+## How It Works
 
-```bash
-pytest tests/
-```
+1. **PR Triggered**: GitHub Actions workflow starts on PR events
+2. **Code Fetched**: Changed files retrieved via GitHub API
+3. **LLM Detection**: Analyzer scans for LLM SDK usage patterns
+4. **Cost Analysis**: Models detected and pricing looked up
+5. **Issue Detection**: Security, configuration, and best-practice issues identified
+6. **AI Enhancement**: NVIDIA NIM AI provides additional insights
+7. **Comments Posted**: Individual comments for each issue with suggestions
+8. **Summary**: Optional summary comment with aggregated findings
 
-### Adding Custom Analyzers
+## Security
 
-1. Create new analyzer in `src/analyzers/`
-2. Inherit from `BaseAnalyzer`
-3. Implement required methods
-4. Add to `review_engine.py`
-5. Update config to enable/disable
+⚠️ **Important:**
 
-## Cost Estimation
+- **Never commit API keys** - Use environment variables or GitHub Secrets
+- **Monitor key usage** - The analyzer detects exposure
+- **Rotate keys regularly** - Best practice for API key management
+- **Review suggestions** - AI recommendations should be validated before applying
 
-NVIDIA NIM API costs vary by plan. Approximate token usage:
-- Small PR (5 files): ~10,000 tokens
-- Medium PR (20 files): ~40,000 tokens
-- Large PR (50 files): ~100,000 tokens
+## Dependencies
 
-Check current pricing at https://build.nvidia.com/
-
-## Security Considerations
-
-- Store API keys in GitHub Secrets, never commit them
-- Review AI suggestions before applying (AI can make mistakes)
-- This tool performs **defensive security analysis only**
-- Does not assist with offensive security or credential harvesting
+- `openai>=1.0.0` - OpenAI client (also works with NVIDIA NIM)
+- `PyGithub>=2.1.1` - GitHub API client
+- `pyyaml>=6.0` - Configuration
+- `requests>=2.31.0` - HTTP client
 
 ## Contributing
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new features
-4. Submit a pull request
+Areas for improvement:
+
+- Add more LLM providers
+- Improve cost estimation accuracy
+- Add token counting for better estimates
+- Support more programming languages
+- Add caching pattern detection
 
 ## License
 
@@ -343,11 +297,11 @@ Contributions welcome! Please:
 
 For issues or questions:
 - Open an issue on GitHub
-- Check existing issues for solutions
-- Review troubleshooting section above
+- Check troubleshooting section
+- Review logs for details
 
 ## Acknowledgments
 
 - Powered by Mistral Devstral-2-123b via NVIDIA NIM
-- Built for defensive security and code quality improvement
-- Inspired by automated code review best practices
+- Multi-provider LLM detection and cost analysis
+- Built for optimizing LLM API usage and costs
