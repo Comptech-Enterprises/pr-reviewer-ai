@@ -61,6 +61,97 @@ class CommentFormatter:
 
         return comment
 
+    def format_detailed_issue_comment(self, result: AnalysisResult) -> str:
+        """
+        Format a detailed issue comment with reasoning and solutions.
+
+        Args:
+            result: Analysis result
+
+        Returns:
+            Detailed formatted comment text
+        """
+        emoji = self._get_severity_emoji(result.severity)
+        severity = result.severity.value.upper()
+
+        lines = []
+        lines.append(f"{emoji} **{severity}** [{result.category}] - {result.title}")
+        lines.append("")
+        lines.append("**File:** `{}`".format(result.filename))
+        if result.line_number:
+            lines.append(f"**Line:** {result.line_number}")
+        lines.append("")
+
+        # Reasoning/Issue
+        lines.append("### Issue")
+        lines.append(result.description)
+        lines.append("")
+
+        # Solution
+        if result.suggestion:
+            lines.append("### How to Resolve")
+            lines.append(result.suggestion)
+            lines.append("")
+
+        # Cost savings for LLM issues
+        if "LLM" in result.category or "llm" in result.category.lower():
+            lines.append("### Cost-Saving Alternatives")
+            lines.extend(self._get_llm_cost_savings(result.title))
+            lines.append("")
+
+        # Code snippet
+        if result.code_snippet:
+            lines.append("### Example Code")
+            lines.append("```python")
+            lines.append(result.code_snippet)
+            lines.append("```")
+            lines.append("")
+
+        lines.append("---")
+        lines.append("*Review powered by AI using Mistral Devstral-2-123b*")
+
+        return "\n".join(lines)
+
+    def _get_llm_cost_savings(self, issue_title: str) -> List[str]:
+        """
+        Get cost-saving recommendations for LLM issues.
+
+        Args:
+            issue_title: The issue title
+
+        Returns:
+            List of cost-saving suggestions
+        """
+        lines = []
+
+        if "Hardcoded" in issue_title and "API Key" in issue_title:
+            lines.append("- Use environment variables to secure keys")
+            lines.append("- Implement key rotation policies")
+            lines.append("- Monitor key usage to detect unauthorized access")
+        elif "Token Limit" in issue_title:
+            lines.append("- Set reasonable max_tokens (512-2000 for most tasks)")
+            lines.append("- Cheaper alternatives: Use GPT-3.5 instead of GPT-4 (10x cheaper)")
+            lines.append("- Consider Claude 3 Haiku (5x cheaper than Opus)")
+            lines.append("- Try Mistral 7B (cheapest option)")
+        elif "Caching" in issue_title:
+            lines.append("- Implement response caching: **50-80% cost reduction** for repeated queries")
+            lines.append("- Use Redis or in-memory cache for frequent queries")
+            lines.append("- Cache query embeddings instead of full responses")
+        elif "Retry" in issue_title:
+            lines.append("- Implement exponential backoff to avoid unnecessary retries")
+            lines.append("- Use circuit breaker pattern")
+            lines.append("- Cache failed responses to avoid re-processing")
+        elif "Temperature" in issue_title:
+            lines.append("- Lower temperature (0.0-0.2) for deterministic tasks = slightly faster/cheaper")
+            lines.append("- Use exact mode when possible for cost optimization")
+        else:
+            lines.append("- Choose cheaper models for non-critical tasks")
+            lines.append("- Batch requests to reduce API calls")
+            lines.append("- Use prompt caching when available")
+            lines.append("- Consider fine-tuned smaller models for specific tasks")
+
+        return lines
+
     def format_summary_comment(
         self,
         results_by_category: Dict[str, List[AnalysisResult]],
