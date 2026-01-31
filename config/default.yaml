@@ -3,16 +3,16 @@
 # Analyzers configuration
 analyzers:
   security:
-    enabled: true
+    enabled: false
   quality:
-    enabled: true
+    enabled: false
     max_complexity: 10
     max_function_length: 50
     max_class_length: 300
   performance:
-    enabled: true
+    enabled: false
   testing:
-    enabled: true
+    enabled: false
   llm_usage:
     enabled: true
     # Detect LLM API calls in code and estimate costs
