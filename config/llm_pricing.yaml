@@ -1,0 +1,190 @@
+# LLM Model Pricing Configuration
+# Prices are per 1,000 tokens (as of early 2025)
+# Update these values as pricing changes
+
+# OpenAI Models
+openai:
+  gpt-4:
+    input: 0.03
+    output: 0.06
+    description: "Original GPT-4 model"
+  gpt-4-turbo:
+    input: 0.01
+    output: 0.03
+    description: "GPT-4 Turbo with 128K context"
+  gpt-4o:
+    input: 0.005
+    output: 0.015
+    description: "GPT-4o multimodal model"
+  gpt-4o-mini:
+    input: 0.00015
+    output: 0.0006
+    description: "Cost-effective GPT-4o mini"
+  gpt-3.5-turbo:
+    input: 0.0005
+    output: 0.0015
+    description: "GPT-3.5 Turbo"
+  o1:
+    input: 0.015
+    output: 0.06
+    description: "OpenAI o1 reasoning model"
+  o1-mini:
+    input: 0.003
+    output: 0.012
+    description: "OpenAI o1 mini reasoning model"
+  text-embedding-3-small:
+    input: 0.00002
+    output: 0
+    description: "Small embedding model"
+  text-embedding-3-large:
+    input: 0.00013
+    output: 0
+    description: "Large embedding model"
+  text-embedding-ada-002:
+    input: 0.0001
+    output: 0
+    description: "Legacy embedding model"
+
+# Anthropic Models
+anthropic:
+  claude-3-opus:
+    input: 0.015
+    output: 0.075
+    description: "Most capable Claude model"
+  claude-3-sonnet:
+    input: 0.003
+    output: 0.015
+    description: "Balanced Claude model"
+  claude-3-haiku:
+    input: 0.00025
+    output: 0.00125
+    description: "Fastest Claude model"
+  claude-3.5-sonnet:
+    input: 0.003
+    output: 0.015
+    description: "Enhanced Claude 3.5 Sonnet"
+  claude-3.5-haiku:
+    input: 0.0008
+    output: 0.004
+    description: "Claude 3.5 Haiku"
+
+# Google Models
+google:
+  gemini-pro:
+    input: 0.00025
+    output: 0.0005
+    description: "Gemini Pro"
+  gemini-1.5-pro:
+    input: 0.00125
+    output: 0.005
+    description: "Gemini 1.5 Pro"
+  gemini-1.5-flash:
+    input: 0.000075
+    output: 0.0003
+    description: "Gemini 1.5 Flash"
+  gemini-2.0-flash:
+    input: 0.0001
+    output: 0.0004
+    description: "Gemini 2.0 Flash"
+
+# Mistral Models
+mistral:
+  mistral-large:
+    input: 0.004
+    output: 0.012
+    description: "Mistral Large"
+  mistral-medium:
+    input: 0.0027
+    output: 0.0081
+    description: "Mistral Medium"
+  mistral-small:
+    input: 0.001
+    output: 0.003
+    description: "Mistral Small"
+  codestral:
+    input: 0.001
+    output: 0.003
+    description: "Codestral for code"
+  devstral:
+    input: 0.001
+    output: 0.003
+    description: "Devstral for development"
+  mixtral-8x7b:
+    input: 0.0007
+    output: 0.0007
+    description: "Mixtral 8x7B"
+  mixtral-8x22b:
+    input: 0.002
+    output: 0.006
+    description: "Mixtral 8x22B"
+
+# Cohere Models
+cohere:
+  command-r-plus:
+    input: 0.003
+    output: 0.015
+    description: "Command R Plus"
+  command-r:
+    input: 0.0005
+    output: 0.0015
+    description: "Command R"
+  embed-english-v3:
+    input: 0.0001
+    output: 0
+    description: "English embedding model"
+  embed-multilingual-v3:
+    input: 0.0001
+    output: 0
+    description: "Multilingual embedding model"
+
+# AWS Bedrock (varies by model)
+aws_bedrock:
+  claude-3-sonnet-bedrock:
+    input: 0.003
+    output: 0.015
+    description: "Claude 3 Sonnet on Bedrock"
+  claude-3-haiku-bedrock:
+    input: 0.00025
+    output: 0.00125
+    description: "Claude 3 Haiku on Bedrock"
+  titan-text-express:
+    input: 0.0008
+    output: 0.0016
+    description: "Amazon Titan Text Express"
+  titan-embed:
+    input: 0.0001
+    output: 0
+    description: "Amazon Titan Embeddings"
+
+# Azure OpenAI (same as OpenAI, may vary by region)
+azure:
+  gpt-4-azure:
+    input: 0.03
+    output: 0.06
+    description: "GPT-4 on Azure"
+  gpt-4-turbo-azure:
+    input: 0.01
+    output: 0.03
+    description: "GPT-4 Turbo on Azure"
+  gpt-35-turbo-azure:
+    input: 0.0005
+    output: 0.0015
+    description: "GPT-3.5 Turbo on Azure"
+
+# Default pricing for unknown models
+default:
+  unknown:
+    input: 0.002
+    output: 0.006
+    description: "Default fallback pricing"
+
+# Cost estimation settings
+estimation:
+  # Average tokens per API call (for estimation)
+  avg_input_tokens: 1000
+  avg_output_tokens: 500
+  
+  # Risk thresholds (cost per call)
+  low_cost_threshold: 0.01
+  medium_cost_threshold: 0.05
+  high_cost_threshold: 0.10
