@@ -108,6 +108,25 @@ You are specifically focused on test coverage and quality. Consider:
 - Integration vs unit test balance
 
 Suggest specific test cases to add.
+""",
+        'llm_usage': """
+
+ADDITIONAL LLM USAGE FOCUS:
+You are specifically focused on detecting LLM/AI API usage patterns and estimating costs. Consider:
+- OpenAI, Anthropic, LiteLLM, LangChain, and other LLM SDK usage
+- Model selection and associated costs
+- Token limits (max_tokens) to control costs
+- Hardcoded API keys (CRITICAL security issue)
+- Retry logic and error handling for API resilience
+- Timeout configuration to prevent hanging requests
+- Streaming usage for long responses
+- Async vs sync API calls in appropriate contexts
+- Rate limiting to prevent cost overruns
+- Cost optimization opportunities (model selection, caching)
+
+Estimate costs based on detected models and typical usage patterns.
+Mark hardcoded API keys as CRITICAL severity.
+Mark missing token limits on expensive models as HIGH severity.
 """
     }
 

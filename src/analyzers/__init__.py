@@ -6,6 +6,7 @@ from .security import SecurityAnalyzer
 from .quality import QualityAnalyzer
 from .performance import PerformanceAnalyzer
 from .testing import TestingAnalyzer
+from .llm_usage import LLMUsageAnalyzer
 
 __all__ = [
     'BaseAnalyzer',
@@ -15,4 +16,5 @@ __all__ = [
     'QualityAnalyzer',
     'PerformanceAnalyzer',
     'TestingAnalyzer',
+    'LLMUsageAnalyzer',
 ]

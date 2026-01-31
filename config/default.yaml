@@ -13,6 +13,13 @@ analyzers:
     enabled: true
   testing:
     enabled: true
+  llm_usage:
+    enabled: true
+    # Detect LLM API calls in code and estimate costs
+    check_hardcoded_keys: true
+    check_missing_limits: true
+    check_retry_logic: true
+    estimate_costs: true
 
 # File exclusions (glob patterns)
 exclusions:

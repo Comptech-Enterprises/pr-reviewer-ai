@@ -15,6 +15,7 @@ from analyzers import (
     QualityAnalyzer,
     PerformanceAnalyzer,
     TestingAnalyzer,
+    LLMUsageAnalyzer,
     AnalysisResult,
     Severity
 )
@@ -74,6 +75,11 @@ class ReviewEngine:
         if analyzer_config.get('testing', {}).get('enabled', True):
             analyzers['testing'] = TestingAnalyzer(
                 analyzer_config.get('testing', {})
+            )
+
+        if analyzer_config.get('llm_usage', {}).get('enabled', True):
+            analyzers['llm_usage'] = LLMUsageAnalyzer(
+                analyzer_config.get('llm_usage', {})
             )
 
         logger.info(f"Initialized {len(analyzers)} analyzers: {list(analyzers.keys())}")
