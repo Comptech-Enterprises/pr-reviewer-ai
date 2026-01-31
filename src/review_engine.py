@@ -380,7 +380,7 @@ class ReviewEngine:
         results: Dict[str, List[AnalysisResult]],
         pr_details: Dict
     ):
-        """Post inline review comments."""
+        """Post individual review comments for each issue."""
         min_severity = self._parse_severity(
             self.config.get('min_severity_for_comments', 'low')
         )
@@ -392,23 +392,16 @@ class ReviewEngine:
                 if not self.formatter.should_post_comment(result, min_severity):
                     continue
 
-                # Format comment
-                comment_text = self.formatter.format_inline_comment(result)
+                # Format detailed comment for each issue
+                comment_text = self.formatter.format_detailed_issue_comment(result)
 
-                # Post if line number available
-                if result.line_number:
-                    commit_sha = self.github.get_latest_commit_sha(pr_number)
-                    success = self.github.post_review_comment(
-                        pr_number=pr_number,
-                        body=comment_text,
-                        commit_id=commit_sha,
-                        path=result.filename,
-                        line=result.line_number
-                    )
-                    if success:
-                        posted_count += 1
+                # Post as issue comment for better visibility
+                success = self.github.post_issue_comment(pr_number, comment_text)
+                if success:
+                    posted_count += 1
+                    logger.info(f"Posted comment for: {result.title}")
 
-        logger.info(f"Posted {posted_count} inline comment(s)")
+        logger.info(f"Posted {posted_count} issue comment(s)")
 
     def _post_summary(
         self,
